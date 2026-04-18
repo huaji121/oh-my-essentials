@@ -1,0 +1,24 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Oh My Essentials resource pack",
+    "description": "Oh My Essentials resource pack",
+    "uuid": "fa114710-8896-475d-9806-52c9f7a13286",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 20, 30]
+  },
+  "modules": [
+    {
+      "description": "Oh My Essentials Resource Pack",
+      "type": "resources",
+      "uuid": "161c5ea9-8f6e-41b1-810c-edccb0d397d7",
+      "version": [1, 0, 0]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "442d73f1-9dca-4315-929a-f43d3178f86a",
+      "version": [1, 0, 0]
+    }
+  ]
+}
