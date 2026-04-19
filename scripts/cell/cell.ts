@@ -1,8 +1,8 @@
 // cell.ts
 import { system, Vector3, world } from "@minecraft/server";
-import { packVector3, unpackCoord, PACK_MUL_Y, PACK_MUL_Z } from "./utils";
+import { packVector3, unpackCoord, PACK_MUL_Y, PACK_MUL_Z } from "../utils";
 import { saveCell, loadAllCells } from "./persistence";
-import { JsonStore } from "./JsonStore";
+import { JsonStore } from "../store";
 
 type CellSet = Map<number, Vector3>;
 type CellTable = Map<string, CellSet>;

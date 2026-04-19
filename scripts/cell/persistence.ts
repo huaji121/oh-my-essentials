@@ -1,7 +1,7 @@
 // persistence.ts
 import { Vector3 } from "@minecraft/server";
-import { packVector3, unpackCoord } from "./utils";
-import { JsonStore } from "./JsonStore";
+import { packVector3, unpackCoord } from "../utils";
+import { JsonStore } from "../store";
 
 type CellSet = Map<number, Vector3>;
 type CellTable = Map<string, CellSet>;

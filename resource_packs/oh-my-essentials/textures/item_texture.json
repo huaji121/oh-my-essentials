@@ -2,8 +2,8 @@
   "resource_pack_name": "Not Only Essentials",
   "texture_name": "atlas.items",
   "texture_data": {
-    "ome:goo": {
-      "textures": "textures/items/goo"
+    "ome:rabbit_doll": {
+      "textures": "textures/items/rabbit_doll"
     }
   }
 }

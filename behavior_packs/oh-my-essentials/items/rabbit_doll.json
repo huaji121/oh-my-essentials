@@ -5,17 +5,17 @@
       "menu_category": {
         "category": "items"
       },
-      "identifier": "ome:goo"
+      "identifier": "ome:rabbit_doll"
     },
     "components": {
       "minecraft:max_stack_size": 16,
       "minecraft:icon": {
         "textures": {
-          "default": "ome:goo"
+          "default": "ome:rabbit_doll"
         }
       },
       "minecraft:display_name": {
-        "value": "title.ome:goo.name"
+        "value": "title.ome:rabbit_doll.name"
       }
     }
   }
