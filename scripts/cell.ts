@@ -94,7 +94,7 @@ function* stepJob(dimensionId: string): Generator<void, void, void> {
   // 5. 提交结果
   cellTable.set(dimensionId, next);
   saveCell(dimensionId, next);
-  world.sendMessage(`[${dimensionId}] Stepped. cells: ${next.size}`);
+  world.sendMessage(`[${dimensionId}] 运行完成. 新细胞数: ${next.size}`);
 }
 
 world.afterEvents.playerPlaceBlock.subscribe((event) => {
@@ -131,30 +131,30 @@ world.beforeEvents.explosion.subscribe((event) => {
 
 system.afterEvents.scriptEventReceive.subscribe((event) => {
   switch (event.id) {
-    case "dbg:step": {
+    case "cell:step": {
       cellTable.forEach((cells, dimensionId) => {
         if (cells.size > 0) system.runJob(stepJob(dimensionId));
       });
       break;
     }
 
-    case "dbg:step_dim": {
+    case "cell:step_dim": {
       const dimensionId = event.message.trim();
       if (!dimensionId) {
-        world.sendMessage("用法: /scriptevent dbg:step_dim <dimensionId>");
+        world.sendMessage("用法: /scriptevent cell:step_dim <dimensionId>");
         break;
       }
       system.runJob(stepJob(dimensionId));
       break;
     }
 
-    case "dbg:run": {
+    case "cell:run": {
       const parts = event.message.trim().split(/\s+/);
       const totalSteps = parseInt(parts[0]);
       const intervalTicks = parseInt(parts[1]);
 
       if (isNaN(totalSteps) || isNaN(intervalTicks) || totalSteps <= 0 || intervalTicks <= 0) {
-        world.sendMessage("用法: /scriptevent dbg:run <次数> <间隔ticks>");
+        world.sendMessage("用法: /scriptevent cell:run <次数> <间隔ticks>");
         break;
       }
 
@@ -195,10 +195,10 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
       break;
     }
 
-    case "dbg:rule": {
+    case "cell:rule": {
       const parts = event.message.trim().split("/");
       if (parts.length !== 2) {
-        world.sendMessage("用法: /scriptevent dbg:rule <存活>/<诞生>  例: 5,6,7/6");
+        world.sendMessage("用法: /scriptevent cell:rule <存活>/<诞生>  例: 5,6,7/6");
         break;
       }
 
