@@ -5,7 +5,7 @@
     "description": "Oh My Essentials resource pack",
     "uuid": "fa114710-8896-475d-9806-52c9f7a13286",
     "version": [1, 0, 0],
-    "min_engine_version": [1, 20, 30]
+    "min_engine_version": [1, 26, 10]
   },
   "modules": [
     {

@@ -5,7 +5,7 @@
     "description": "Oh My Essentials behavior pack",
     "uuid": "442d73f1-9dca-4315-929a-f43d3178f86a",
     "version": [1, 0, 0],
-    "min_engine_version": [1, 20, 30]
+    "min_engine_version": [1, 26, 10]
   },
   "modules": [
     {
