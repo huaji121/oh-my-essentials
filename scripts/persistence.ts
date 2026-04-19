@@ -1,6 +1,6 @@
 // persistence.ts
 import { Vector3 } from "@minecraft/server";
-import { hashVector3 } from "./utils";
+import { packVector3, unpackCoord } from "./utils";
 import { JsonStore } from "./JsonStore";
 
 type CellSet = Map<number, Vector3>;
@@ -11,7 +11,10 @@ const cellStore = new JsonStore<SerializedCells>("ome:cells");
 
 function serialize(cells: CellSet): SerializedCells {
   const result: SerializedCells = [];
-  cells.forEach(({ x, y, z }) => result.push([x, y, z]));
+  cells.forEach((_, packed) => {
+    const { x, y, z } = unpackCoord(packed);
+    result.push([x, y, z]);
+  });
   return result;
 }
 
@@ -19,7 +22,7 @@ function deserialize(data: SerializedCells): CellSet {
   const cells: CellSet = new Map();
   for (const [x, y, z] of data) {
     const vec: Vector3 = { x, y, z };
-    cells.set(hashVector3(vec), vec);
+    cells.set(packVector3(vec), vec);
   }
   return cells;
 }

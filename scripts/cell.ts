@@ -1,20 +1,19 @@
 // cell.ts
 import { system, Vector3, world } from "@minecraft/server";
-import { hashVector3 } from "./utils";
+import { packVector3, unpackCoord, PACK_MUL_Y, PACK_MUL_Z } from "./utils";
 import { saveCell, loadAllCells } from "./persistence";
 import { JsonStore } from "./JsonStore";
 
 type CellSet = Map<number, Vector3>;
 type CellTable = Map<string, CellSet>;
 
-// 预计算26个邻居偏移
-const NEIGHBOR_OFFSETS: Vector3[] = [];
+// 预计算26个邻居的 pack delta
+const NEIGHBOR_PACK_DELTAS: number[] = [];
 for (let dx = -1; dx <= 1; dx++)
   for (let dy = -1; dy <= 1; dy++)
     for (let dz = -1; dz <= 1; dz++)
-      if (dx !== 0 || dy !== 0 || dz !== 0) NEIGHBOR_OFFSETS.push({ x: dx, y: dy, z: dz });
+      if (dx !== 0 || dy !== 0 || dz !== 0) NEIGHBOR_PACK_DELTAS.push(dx + dy * PACK_MUL_Y + dz * PACK_MUL_Z);
 
-// 规则
 let SURVIVE_SET = new Set([5, 6, 7]);
 let BIRTH_SET = new Set([6]);
 
@@ -44,57 +43,52 @@ function* stepJob(dimensionId: string): Generator<void, void, void> {
   const cells = getOrCreateCellSet(dimensionId);
   const dimension = world.getDimension(dimensionId);
 
-  // 1. 收集候选格子
-  const candidates: CellSet = new Map();
+  // 1. 统计邻居数（直接累加，省掉 candidates 集合）
+  const neighborCount = new Map<number, number>();
   let i = 0;
-  for (const [, location] of cells) {
-    for (const off of NEIGHBOR_OFFSETS) {
-      const c: Vector3 = { x: location.x + off.x, y: location.y + off.y, z: location.z + off.z };
-      candidates.set(hashVector3(c), c);
+  for (const [packed] of cells) {
+    for (const delta of NEIGHBOR_PACK_DELTAS) {
+      const np = packed + delta;
+      neighborCount.set(np, (neighborCount.get(np) ?? 0) + 1);
     }
-    if (++i % 50 === 0) yield;
+    if (++i % 200 === 0) yield;
   }
 
   // 2. 计算下一代
   const next: CellSet = new Map();
   i = 0;
-  for (const [, location] of candidates) {
-    let count = 0;
-    for (const off of NEIGHBOR_OFFSETS) {
-      const n: Vector3 = { x: location.x + off.x, y: location.y + off.y, z: location.z + off.z };
-      if (cells.has(hashVector3(n))) count++;
-    }
-    const alive = cells.has(hashVector3(location));
+  for (const [packed, count] of neighborCount) {
+    const alive = cells.has(packed);
     if (alive && SURVIVE_SET.has(count)) {
-      next.set(hashVector3(location), location);
+      next.set(packed, cells.get(packed)!);
     } else if (!alive && BIRTH_SET.has(count)) {
-      next.set(hashVector3(location), location);
+      next.set(packed, unpackCoord(packed));
     }
-    if (++i % 100 === 0) yield;
+    if (++i % 500 === 0) yield;
   }
 
   // 3. 清除死亡方块
   i = 0;
-  for (const [hash, location] of cells) {
-    if (!next.has(hash)) {
+  for (const [packed, location] of cells) {
+    if (!next.has(packed)) {
       try {
         dimension.setBlockType(location, "minecraft:air");
       } catch {}
     }
-    if (++i % 50 === 0) yield;
+    if (++i % 100 === 0) yield;
   }
 
   // 4. 放置新生方块
   i = 0;
-  for (const [hash, location] of next) {
-    if (!cells.has(hash)) {
+  for (const [packed, location] of next) {
+    if (!cells.has(packed)) {
       try {
         dimension.setBlockType(location, "ome:cell");
       } catch {
-        next.delete(hash);
+        next.delete(packed);
       }
     }
-    if (++i % 50 === 0) yield;
+    if (++i % 100 === 0) yield;
   }
 
   // 5. 提交结果
@@ -107,7 +101,7 @@ world.afterEvents.playerPlaceBlock.subscribe((event) => {
   if (event.block.typeId !== "ome:cell") return;
   const dimensionId = event.player.dimension.id;
   const cells = getOrCreateCellSet(dimensionId);
-  cells.set(hashVector3(event.block.location), event.block.location);
+  cells.set(packVector3(event.block.location), event.block.location);
   saveCell(dimensionId, cells);
   world.sendMessage(`[${dimensionId}] Current cells: ${cells.size}`);
 });
@@ -116,7 +110,7 @@ world.beforeEvents.playerBreakBlock.subscribe((event) => {
   if (event.block.typeId !== "ome:cell") return;
   const dimensionId = event.player.dimension.id;
   const cells = getOrCreateCellSet(dimensionId);
-  cells.delete(hashVector3(event.block.location));
+  cells.delete(packVector3(event.block.location));
   saveCell(dimensionId, cells);
   world.sendMessage(`[${dimensionId}] Current cells: ${cells.size}`);
 });
@@ -129,13 +123,10 @@ world.beforeEvents.explosion.subscribe((event) => {
   let changed = false;
   for (const block of event.getImpactedBlocks()) {
     if (block.typeId !== "ome:cell") continue;
-    cells.delete(hashVector3(block.location));
+    cells.delete(packVector3(block.location));
     changed = true;
   }
-
-  if (changed) {
-    system.run(() => saveCell(dimensionId, cells));
-  }
+  if (changed) system.run(() => saveCell(dimensionId, cells));
 });
 
 system.afterEvents.scriptEventReceive.subscribe((event) => {
@@ -190,7 +181,7 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
               yield* stepJob(dimensionId);
               if (--pending === 0) {
                 running = false;
-                world.sendMessage(`Remaining steps: ${remaining}`); // 加这行
+                world.sendMessage(`还剩 ${remaining} 步`);
               }
             })()
           );
