@@ -103,7 +103,7 @@ world.afterEvents.playerPlaceBlock.subscribe((event) => {
   const cells = getOrCreateCellSet(dimensionId);
   cells.set(packVector3(event.block.location), event.block.location);
   saveCell(dimensionId, cells);
-  world.sendMessage(`[${dimensionId}] Current cells: ${cells.size}`);
+  world.sendMessage(`[${dimensionId}] 当前细胞数: ${cells.size}`);
 });
 
 world.beforeEvents.playerBreakBlock.subscribe((event) => {
@@ -112,7 +112,7 @@ world.beforeEvents.playerBreakBlock.subscribe((event) => {
   const cells = getOrCreateCellSet(dimensionId);
   cells.delete(packVector3(event.block.location));
   saveCell(dimensionId, cells);
-  world.sendMessage(`[${dimensionId}] Current cells: ${cells.size}`);
+  world.sendMessage(`[${dimensionId}] 当前细胞数: ${cells.size}`);
 });
 
 world.beforeEvents.explosion.subscribe((event) => {
