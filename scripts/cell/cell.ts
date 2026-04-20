@@ -1,10 +1,11 @@
 // cell.ts
 import { system, Vector3, world } from "@minecraft/server";
 // cell.ts 顶部
-import { packVector3, unpackCoord, NEIGHBOR_PACK_DELTAS } from "../utils";
+import { packVector3, unpackCoord, NEIGHBOR_PACK_DELTAS, packCoord } from "../utils";
 // 删掉原来手动计算 NEIGHBOR_PACK_DELTAS 的那个 for 循环
 import { saveCell, loadAllCells } from "./persistence";
 import { JsonStore } from "../store";
+import { Perlin3D } from "../noise";
 
 type CellSet = Map<number, Vector3>;
 type CellTable = Map<string, CellSet>;
@@ -234,6 +235,74 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
       BIRTH_SET = newBirth;
       ruleStore.set("current", { survive: [...newSurvive], birth: [...newBirth] });
       world.sendMessage(`规则已设为 B${[...newBirth].join(",")} / S${[...newSurvive].join(",")}`);
+      break;
+    }
+
+    case "cell:fill": {
+      const parts = event.message.trim().split(/\s+/);
+      const radius = parseInt(parts[0]);
+      const threshold = parseFloat(parts[1]) * 2 - 1; // 映射到柏林噪声范围 [-1, 1]
+      const scale = parseFloat(parts[2] ?? "0.1");
+      const seed = parts[3] ? parseInt(parts[3]) : (Math.random() * 65536) | 0;
+
+      if (isNaN(radius) || isNaN(threshold) || radius <= 0) {
+        world.sendMessage("用法: /scriptevent cell:fill <半径> <密度0~1> [噪声缩放] [seed]");
+        break;
+      }
+
+      // 取第一个玩家的位置和维度
+      const player = [...world.getPlayers()][0];
+      if (!player) {
+        world.sendMessage("没有玩家");
+        break;
+      }
+
+      const cx = Math.floor(player.location.x);
+      const cy = Math.floor(player.location.y);
+      const cz = Math.floor(player.location.z);
+      const dimensionId = player.dimension.id;
+      const cells = getOrCreateCellSet(dimensionId);
+      const noise = new Perlin3D(seed);
+
+      world.sendMessage(`开始生成... 半径=${radius} 密度=${parts[1]} 缩放=${scale} seed=${seed}`);
+
+      system.runJob(
+        (function* (): Generator<void, void, void> {
+          let added = 0;
+          let i = 0;
+          for (let dx = -radius; dx <= radius; dx++) {
+            for (let dy = -radius; dy <= radius; dy++) {
+              for (let dz = -radius; dz <= radius; dz++) {
+                // 球形范围
+                if (dx * dx + dy * dy + dz * dz > radius * radius) continue;
+
+                const nx = noise.sample((cx + dx) * scale, (cy + dy) * scale, (cz + dz) * scale);
+
+                if (nx > threshold) {
+                  const x = cx + dx,
+                    y = cy + dy,
+                    z = cz + dz;
+                  const packed = packCoord(x, y, z);
+                  if (!cells.has(packed)) {
+                    const vec = { x, y, z };
+                    cells.set(packed, vec);
+                    try {
+                      player.dimension.setBlockType(vec, "ome:cell");
+                    } catch {}
+                    added++;
+                  }
+                }
+
+                if (++i % 200 === 0) yield;
+              }
+            }
+            yield; // 每层 dx 额外让出一次
+          }
+
+          saveCell(dimensionId, cells);
+          world.sendMessage(`生成完成，新增 ${added} 个细胞，当前共 ${cells.size} 个`);
+        })()
+      );
       break;
     }
   }
