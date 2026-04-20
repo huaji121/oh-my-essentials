@@ -190,10 +190,10 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
       break;
     }
 
-    case "cell:rule": {
+    case "dbg:rule": {
       const parts = event.message.trim().split("/");
       if (parts.length !== 2) {
-        world.sendMessage("用法: /scriptevent cell:rule <存活>/<诞生>  例: 5,6,7/6");
+        world.sendMessage("用法: /scriptevent dbg:rule <诞生>/<存活>  例: 6/5,6,7");
         break;
       }
 
@@ -205,8 +205,8 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
             .filter((n) => !isNaN(n) && n >= 0 && n <= 26)
         );
 
-      const newSurvive = parseSets(parts[0]);
-      const newBirth = parseSets(parts[1]);
+      const newBirth = parseSets(parts[0]); // 原来是 newSurvive
+      const newSurvive = parseSets(parts[1]); // 原来是 newBirth
 
       if (newSurvive.size === 0 || newBirth.size === 0) {
         world.sendMessage("规则格式错误，数字范围 0-26");
@@ -216,7 +216,7 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
       SURVIVE_SET = newSurvive;
       BIRTH_SET = newBirth;
       ruleStore.set("current", { survive: [...newSurvive], birth: [...newBirth] });
-      world.sendMessage(`规则已设为 ${[...newSurvive].join(",")}/${[...newBirth].join(",")}`);
+      world.sendMessage(`规则已设为 B${[...newBirth].join(",")} / S${[...newSurvive].join(",")}`);
       break;
     }
   }
