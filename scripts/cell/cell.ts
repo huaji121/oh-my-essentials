@@ -173,10 +173,16 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
           return;
         }
 
+        // 检查是否有细胞可以运行
+        const activeDimensions = [...cellTable.entries()].filter(([, cells]) => cells.size > 0);
+        if (activeDimensions.length === 0) {
+          world.sendMessage("没有细胞，自动运行已终止");
+          return;
+        }
+
         running = true;
         let pending = 0;
-        cellTable.forEach((cells, dimensionId) => {
-          if (cells.size === 0) return;
+        activeDimensions.forEach(([dimensionId]) => {
           pending++;
           system.runJob(
             (function* (): Generator<void, void, void> {
@@ -188,7 +194,6 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
             })()
           );
         });
-        if (pending === 0) running = false;
 
         remaining--;
         system.runTimeout(runNext, intervalTicks);
