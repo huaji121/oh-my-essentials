@@ -124,6 +124,8 @@ world.beforeEvents.explosion.subscribe((event) => {
   if (changed) system.run(() => saveCell(dimensionId, cells));
 });
 
+let runCancelled = false;
+
 system.afterEvents.scriptEventReceive.subscribe((event) => {
   switch (event.id) {
     case "cell:step": {
@@ -153,10 +155,15 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
         break;
       }
 
+      runCancelled = false;
       let remaining = totalSteps;
       let running = false;
 
       const runNext = () => {
+        if (runCancelled) {
+          world.sendMessage("自动运行已终止");
+          return;
+        }
         if (remaining <= 0) {
           world.sendMessage("自动运行完成");
           return;
@@ -190,7 +197,12 @@ system.afterEvents.scriptEventReceive.subscribe((event) => {
       break;
     }
 
-    case "dbg:rule": {
+    case "cell:stop": {
+      runCancelled = true;
+      break;
+    }
+
+    case "cell:rule": {
       const parts = event.message.trim().split("/");
       if (parts.length !== 2) {
         world.sendMessage("用法: /scriptevent dbg:rule <诞生>/<存活>  例: 6/5,6,7");
