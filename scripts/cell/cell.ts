@@ -1,18 +1,13 @@
 // cell.ts
 import { system, Vector3, world } from "@minecraft/server";
-import { packVector3, unpackCoord, PACK_MUL_Y, PACK_MUL_Z } from "../utils";
+// cell.ts 顶部
+import { packVector3, unpackCoord, NEIGHBOR_PACK_DELTAS } from "../utils";
+// 删掉原来手动计算 NEIGHBOR_PACK_DELTAS 的那个 for 循环
 import { saveCell, loadAllCells } from "./persistence";
 import { JsonStore } from "../store";
 
 type CellSet = Map<number, Vector3>;
 type CellTable = Map<string, CellSet>;
-
-// 预计算26个邻居的 pack delta
-const NEIGHBOR_PACK_DELTAS: number[] = [];
-for (let dx = -1; dx <= 1; dx++)
-  for (let dy = -1; dy <= 1; dy++)
-    for (let dz = -1; dz <= 1; dz++)
-      if (dx !== 0 || dy !== 0 || dz !== 0) NEIGHBOR_PACK_DELTAS.push(dx + dy * PACK_MUL_Y + dz * PACK_MUL_Z);
 
 let SURVIVE_SET = new Set([5, 6, 7]);
 let BIRTH_SET = new Set([6]);
